@@ -6,6 +6,7 @@
 
 ### Fixed
 
+- CI smoke (https) 失败：TLS 下 curl 协商到 HTTP/2，WebSocket 升级头被丢弃（404）。冒烟测试的 WebSocket 检查改为强制 HTTP/1.1，与浏览器行为一致；Nginx 配置本身无问题
 - CI lint 失败（DL3006）：原因是 hadolint-action v3.1.0 内置的 hadolint v2.12.0 无法解析 `FROM ${REGISTRY_PREFIX}${NODE_IMAGE}` 中的标签；升级到 hadolint v2.15.1 后通过，Dockerfile 与构建参数保持不变
 
 ### Changed

@@ -39,7 +39,7 @@ check "GET / without token -> 401" "401" "$(c -H "$H" "${base}/")"
 hdr="$(curl -sk -o /dev/null -D - -m 10 -H "$H" "${base}/?token=${token}" || true)"
 status="$(printf '%s' "$hdr" | head -n 1 | awk '{print $2}')"
 check "token exchange -> redirect" "30[23]" "$status"
-cookie="$(printf '%s' "$hdr" | grep -i '^set-cookie:' | head -n 1 | sed -E 's/^[Ss]et-[Cc]ookie: *([^;]*).*/\1/' | tr -d '\r')"
+cookie="$(printf '%s' "$hdr" | grep -i '^set-cookie:' | head -n 1 | sed -E 's/^[Ss]et-[Cc]ookie: *([^;]*).*/\1/' | tr -d '\r' || true)"
 check "token exchange sets session cookie" "yes" "$([ -n "$cookie" ] && echo yes || echo no)"
 if [ "$mode" = https ]; then
   check "session cookie has Secure flag" "yes" \
@@ -50,7 +50,9 @@ check "API without cookie -> 401" "401" "$(c -X POST -H "$H" "${base}/api/smoke-
 api_code="$(c -X POST -H "$H" -b "$cookie" "${base}/api/smoke-test")"
 check "API with cookie is not 401/403" "yes" "$([[ ! "$api_code" =~ ^(401|403|000)$ ]] && echo yes || echo "no ($api_code)")"
 check "untrusted Host -> 403" "403" "$(c -X POST -H 'Host: untrusted.invalid' -b "$cookie" "${base}/api/smoke-test")"
-check "WebSocket upgrade -> 101" "101" "$(c -m 5 -H "$H" -b "$cookie" \
+# Force HTTP/1.1: over TLS curl negotiates HTTP/2, which has no Upgrade mechanism.
+# Browsers do the same, since nginx does not offer WebSocket over HTTP/2 (RFC 8441).
+check "WebSocket upgrade -> 101" "101" "$(c --http1.1 -m 5 -H "$H" -b "$cookie" \
   -H 'Connection: Upgrade' -H 'Upgrade: websocket' -H 'Sec-WebSocket-Version: 13' \
   -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' "${base}/api/remote.mux")"
 
