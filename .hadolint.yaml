@@ -1,0 +1,4 @@
+ignored:
+  # Pinning exact Debian package versions breaks builds whenever the mirror
+  # rotates point releases; the base image tag already bounds the distro.
+  - DL3008

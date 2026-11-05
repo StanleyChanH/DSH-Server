@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: DeepSeek Harness 上游问题 / Upstream dsh issues
+    url: https://github.com/deepseek-ai/deepseek-harness/discussions
+    about: dsh 本身的功能与 bug 请到上游反馈

@@ -1,0 +1,42 @@
+name: 问题反馈 / Bug report
+description: 部署或运行中遇到的问题
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        dsh 本身（Agent 行为、Web UI 功能）的问题请提交到上游 [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness)。
+        **安全问题请勿公开提交**，见 SECURITY.md。
+        ⚠️ 粘贴日志前请删除登录链接中的 `token=...`、API Key 与公网地址。
+  - type: textarea
+    id: what
+    attributes:
+      label: 问题描述 / What happened
+      description: 现象、期望行为、复现步骤
+    validations:
+      required: true
+  - type: input
+    id: dsh-version
+    attributes:
+      label: DSH_VERSION
+      placeholder: 0.2.1-rc.5
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: NGINX_MODE
+      options: [http, https]
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: 环境 / Environment
+      description: OS、`docker version`、`docker compose version`
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志 / Logs
+      description: "`docker compose logs --tail=100`（已脱敏）"
+      render: text

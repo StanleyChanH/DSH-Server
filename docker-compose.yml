@@ -1,0 +1,88 @@
+# DeepSeek Harness (dsh) Web UI behind Nginx.
+#
+#   ./scripts/init.sh <public-host>  # create .env and the mounted directories
+#   docker compose up -d --build
+#   ./scripts/show-url.sh            # print the login URL (contains the startup token)
+#
+# Settings live in .env (see .env.example). Local tweaks that should not be
+# committed go in docker-compose.override.yml (git-ignored, auto-loaded).
+#
+# All persistent data is bind-mounted from this project directory:
+#   ./data/home       -> /home/dsh      ($HOME; DSH_HOME=/home/dsh/.dsh: config, API keys, sessions, plugins)
+#   ./workspace       -> /workspace     (projects the agent works on)
+#   ./nginx/...       -> nginx config, templates, certs
+#   ./logs/nginx      -> nginx access/error logs
+
+name: dsh-server
+
+services:
+  nginx:
+    image: ${REGISTRY_PREFIX-docker.m.daocloud.io/library/}nginx:${NGINX_VERSION:-1.28-alpine}
+    container_name: dsh-nginx
+    restart: unless-stopped
+    # nginx owns the network namespace; dsh joins it and listens on 127.0.0.1 only,
+    # so the dsh port is never reachable except through nginx.
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      DSH_PORT: ${DSH_PORT:-3080}
+      DSH_SERVER_NAME: ${DSH_SERVER_NAME:-_}
+      HTTPS_PORT: ${HTTPS_PORT:-443}
+      NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_CLIENT_MAX_BODY_SIZE:-200m}
+    # nginx.conf is reached through a directory mount + symlink rather than a
+    # single-file bind mount, so edits that replace the file (most editors, git)
+    # are visible to `make reload` without recreating the container.
+    entrypoint: ["/bin/sh", "-c", "ln -sf /etc/nginx/dsh/nginx.conf /etc/nginx/nginx.conf && exec /docker-entrypoint.sh \"$$@\"", "--"]
+    command: ["nginx", "-g", "daemon off;"]
+    volumes:
+      - ./nginx:/etc/nginx/dsh:ro
+      - ./nginx/templates/${NGINX_MODE:-http}:/etc/nginx/templates:ro
+      - ./nginx/snippets:/etc/nginx/snippets:ro
+      - ./nginx/custom.d:/etc/nginx/custom.d:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+      - ./logs/nginx:/var/log/nginx
+    healthcheck:
+      test: ["CMD-SHELL", "nginx -t -q || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  dsh:
+    build:
+      context: ./dsh
+      args:
+        REGISTRY_PREFIX: ${REGISTRY_PREFIX-docker.m.daocloud.io/library/}
+        DSH_VERSION: ${DSH_VERSION:-0.2.1-rc.5}
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmmirror.com}
+        APT_MIRROR: ${APT_MIRROR-mirrors.aliyun.com}
+        UID: ${DSH_UID:-1000}
+        GID: ${DSH_GID:-1000}
+    image: dsh-server/dsh:${DSH_VERSION:-0.2.1-rc.5}
+    container_name: dsh-app
+    restart: unless-stopped
+    network_mode: "service:nginx"
+    depends_on:
+      - nginx
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      DSH_PORT: ${DSH_PORT:-3080}
+      DSH_PUBLIC_URL: ${DSH_PUBLIC_URL:-}
+      DSH_TRUSTED_HOSTS: ${DSH_TRUSTED_HOSTS:-}
+      DSH_EXTRA_ARGS: ${DSH_EXTRA_ARGS:-}
+    volumes:
+      - ./data/home:/home/dsh
+      - ./workspace:/workspace
+    healthcheck:
+      # "/" answers 401 without a token, so treat any non-5xx HTTP response as healthy
+      test: ["CMD-SHELL", "c=$$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:$${DSH_PORT}/); [ \"$$c\" -ge 200 ] && [ \"$$c\" -lt 500 ]"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"

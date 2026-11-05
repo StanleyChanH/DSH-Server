@@ -1,0 +1,16 @@
+# HTTP mode (NGINX_MODE=http). Rendered with envsubst by the nginx image.
+# Note: in plain HTTP the startup token and session cookie travel unencrypted.
+# Prefer NGINX_MODE=https for public deployments.
+
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name ${DSH_SERVER_NAME};
+
+    client_max_body_size ${NGINX_CLIENT_MAX_BODY_SIZE};
+
+    location / {
+        proxy_pass http://127.0.0.1:${DSH_PORT};
+        include /etc/nginx/snippets/dsh-proxy.conf;
+    }
+}

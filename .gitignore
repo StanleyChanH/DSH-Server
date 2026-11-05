@@ -1,0 +1,39 @@
+# ---- Local configuration & secrets -------------------------------------
+.env
+.env.*
+!.env.example
+docker-compose.override.yml
+compose.override.yml
+
+# TLS material
+nginx/certs/*
+!nginx/certs/.gitkeep
+*.pem
+*.key
+*.crt
+
+# Optional basic auth (only the example is tracked)
+nginx/snippets/auth/htpasswd
+nginx/snippets/auth/*.conf
+
+# Site-specific extra nginx config
+nginx/custom.d/*
+!nginx/custom.d/.gitkeep
+
+# ---- Runtime data (bind mounts) ----------------------------------------
+# dsh home: API keys, credentials, sessions, plugins
+data/
+# agent workspace: your projects
+workspace/*
+!workspace/.gitkeep
+# nginx logs
+logs/
+
+# ---- Editors / OS ------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+*.bak

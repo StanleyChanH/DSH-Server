@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: shellcheck
+        run: shellcheck scripts/*.sh dsh/entrypoint.sh
+
+      - name: hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: dsh/Dockerfile
+          config: .hadolint.yaml
+
+      - name: Validate compose file
+        run: docker compose --env-file .env.example config -q
+
+  smoke:
+    needs: lint
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [http, https]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare .env (official registries, fake public host)
+        run: |
+          if [ "${{ matrix.mode }}" = https ]; then
+            ./scripts/init.sh https://dsh.test/
+            openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+              -subj "/CN=dsh.test" -addext "subjectAltName=DNS:dsh.test" \
+              -keyout nginx/certs/privkey.pem -out nginx/certs/fullchain.pem
+          else
+            ./scripts/init.sh http://dsh.test/
+          fi
+          sed -i \
+            -e 's|^REGISTRY_PREFIX=.*|REGISTRY_PREFIX=|' \
+            -e 's|^NPM_REGISTRY=.*|NPM_REGISTRY=https://registry.npmjs.org|' \
+            -e 's|^APT_MIRROR=.*|APT_MIRROR=|' \
+            -e 's|^TZ=.*|TZ=UTC|' .env
+          cat .env
+
+      - name: Build and start
+        run: docker compose up -d --build --wait --wait-timeout 300
+
+      - name: Smoke test
+        run: ./scripts/smoke-test.sh
+
+      - name: Logs on failure
+        if: failure()
+        run: |
+          docker compose ps
+          docker compose logs --no-color | sed -E 's/token=[^ &]+/token=<redacted>/g'
+
+      - name: Tear down
+        if: always()
+        run: docker compose down
