@@ -4,6 +4,9 @@
 .PHONY: help init up down restart build upgrade ps logs url reload shell config lint
 
 COMPOSE ?= docker compose
+# Pinned lint tools: CI runs `make lint`, so local and CI results always match.
+SHELLCHECK_IMAGE ?= koalaman/shellcheck:v0.11.0
+HADOLINT_IMAGE ?= hadolint/hadolint:v2.15.1
 HOST ?=
 
 help: ## Show this help
@@ -48,6 +51,6 @@ config: ## Print the resolved compose config
 	$(COMPOSE) config
 
 lint: ## Lint shell scripts, Dockerfile and compose file (uses docker images)
-	docker run --rm -v "$(CURDIR):/src:ro" -w /src koalaman/shellcheck:stable scripts/*.sh dsh/entrypoint.sh
-	docker run --rm -i -v "$(CURDIR)/.hadolint.yaml:/.config/hadolint.yaml:ro" hadolint/hadolint < dsh/Dockerfile
+	docker run --rm -v "$(CURDIR):/src:ro" -w /src $(SHELLCHECK_IMAGE) scripts/*.sh dsh/entrypoint.sh
+	docker run --rm -i -v "$(CURDIR)/.hadolint.yaml:/.config/hadolint.yaml:ro" $(HADOLINT_IMAGE) < dsh/Dockerfile
 	$(COMPOSE) --env-file .env.example config -q

@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- CI 中 hadolint DL3006 误报：`FROM` 显式写出 `node:<tag>`（`NODE_IMAGE` 构建参数更名为 `NODE_VERSION`）
+
+### Changed
+
+- CI 改为直接执行 `make lint`，lint 工具镜像版本在 Makefile 中固定，本地与 CI 结果一致
+- `actions/checkout` 升级到 v7，runner 固定为 `ubuntu-24.04`
+- LICENSE 版权方改为 StanleyChanH
+
 ## [0.1.0] - 2026-11-05
 
 ### Added

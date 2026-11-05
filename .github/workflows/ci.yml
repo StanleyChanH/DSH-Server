@@ -15,31 +15,22 @@ concurrency:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - name: shellcheck
-        run: shellcheck scripts/*.sh dsh/entrypoint.sh
-
-      - name: hadolint
-        uses: hadolint/hadolint-action@v3.1.0
-        with:
-          dockerfile: dsh/Dockerfile
-          config: .hadolint.yaml
-
-      - name: Validate compose file
-        run: docker compose --env-file .env.example config -q
+      - name: Lint (shellcheck + hadolint + compose config)
+        run: make lint
 
   smoke:
     needs: lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         mode: [http, https]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Prepare .env (official registries, fake public host)
         run: |
