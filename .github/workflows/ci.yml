@@ -23,7 +23,7 @@ jobs:
         run: shellcheck scripts/*.sh dsh/entrypoint.sh
 
       - name: hadolint
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@v3.5.0
         with:
           dockerfile: dsh/Dockerfile
           config: .hadolint.yaml
