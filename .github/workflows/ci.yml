@@ -17,7 +17,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: shellcheck
         run: shellcheck scripts/*.sh dsh/entrypoint.sh
@@ -39,7 +39,7 @@ jobs:
       matrix:
         mode: [http, https]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Prepare .env (official registries, fake public host)
         run: |
