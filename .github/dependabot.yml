@@ -4,3 +4,9 @@ updates:
     directory: /
     schedule:
       interval: monthly
+
+  # Lint tool images used by `make lint` (local and CI)
+  - package-ecosystem: docker-compose
+    directory: /.github/lint
+    schedule:
+      interval: monthly

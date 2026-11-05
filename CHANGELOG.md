@@ -6,11 +6,12 @@
 
 ### Fixed
 
-- CI 中 hadolint DL3006 误报：`FROM` 显式写出 `node:<tag>`（`NODE_IMAGE` 构建参数更名为 `NODE_VERSION`）
+- CI lint 失败（DL3006）：原因是 hadolint-action v3.1.0 内置的 hadolint v2.12.0 无法解析 `FROM ${REGISTRY_PREFIX}${NODE_IMAGE}` 中的标签；升级到 hadolint v2.15.1 后通过，Dockerfile 与构建参数保持不变
 
 ### Changed
 
-- CI 改为直接执行 `make lint`，lint 工具镜像版本在 Makefile 中固定，本地与 CI 结果一致
+- CI 改为直接执行 `make lint`；shellcheck / hadolint 镜像版本固定在 `.github/lint/compose.yml`，由 Dependabot 跟踪更新，本地与 CI 使用同一版本
+- hadolint 以文件路径方式运行，报错带 `dsh/Dockerfile:<行号>`
 - `actions/checkout` 升级到 v7，runner 固定为 `ubuntu-24.04`
 - LICENSE 版权方改为 StanleyChanH
 

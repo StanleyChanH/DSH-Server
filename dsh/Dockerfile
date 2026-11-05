@@ -1,8 +1,8 @@
 # DeepSeek Harness (dsh) runtime image
 # Installs the published npm CLI (@deepseek-ai/dsh) on Node.js 24.
 ARG REGISTRY_PREFIX=docker.m.daocloud.io/library/
-ARG NODE_VERSION=24-bookworm-slim
-FROM ${REGISTRY_PREFIX}node:${NODE_VERSION}
+ARG NODE_IMAGE=node:24-bookworm-slim
+FROM ${REGISTRY_PREFIX}${NODE_IMAGE}
 
 ARG DSH_VERSION=0.2.1-rc.5
 ARG PNPM_VERSION=12.16.1

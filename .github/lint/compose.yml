@@ -1,0 +1,21 @@
+# Pinned lint tools, used by `make lint` locally and in CI.
+# Kept in a compose file so Dependabot (docker-compose ecosystem) bumps the
+# image tags; see .github/dependabot.yml.
+name: dsh-server-lint
+
+services:
+  shellcheck:
+    image: koalaman/shellcheck:v0.11.0
+    network_mode: none
+    working_dir: /src
+    volumes:
+      - ../..:/src:ro
+
+  hadolint:
+    image: hadolint/hadolint:v2.15.1
+    network_mode: none
+    working_dir: /src
+    volumes:
+      - ../..:/src:ro
+    # reads ./.hadolint.yaml from the working directory
+    command: ["hadolint", "dsh/Dockerfile"]
