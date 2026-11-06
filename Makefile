@@ -1,7 +1,7 @@
 # Shortcuts for common operations. Everything here is plain `docker compose`;
 # run `make help` for the list.
 .DEFAULT_GOAL := help
-.PHONY: help init up down restart build upgrade ps logs url reload shell config lint
+.PHONY: help init up down restart build upgrade ps logs url reload shell config lint plugins
 
 COMPOSE ?= docker compose
 # Lint tool images are pinned in .github/lint/compose.yml (bumped by Dependabot);
@@ -46,6 +46,9 @@ reload: ## Validate and hot-reload nginx config
 
 shell: ## Open a shell inside the dsh container
 	$(COMPOSE) exec dsh bash
+
+plugins: ## Install the lingshu dsh-memory plugin (DSH_MEMORY_VERSION=<tag> to override)
+	./scripts/install-plugins.sh
 
 config: ## Print the resolved compose config
 	$(COMPOSE) config

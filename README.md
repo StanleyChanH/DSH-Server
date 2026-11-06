@@ -126,11 +126,30 @@ HTTPS 模式下，80 端口会 301 跳转到 HTTPS，并开启 HSTS，Nginx 也�
 │   └── certs/                  # TLS 证书（不入库）
 ├── scripts/
 │   ├── init.sh                 # 初始化 .env 与挂载目录
+│   ├── install-plugins.sh      # 安装灵枢 dsh-memory 插件（make plugins）
 │   └── show-url.sh             # 打印当前登录链接
 ├── data/home/      ─┐          # → /home/dsh；DSH_HOME=data/home/.dsh（API Key、会话、插件、凭据）
 ├── workspace/       ├ 运行时   # → /workspace；Agent 工作区
 └── logs/nginx/     ─┘ 生成     # Nginx 日志
 ```
+
+## 插件：灵枢长期记忆（可选）
+
+[灵枢 dsh-memory](https://github.com/FuRongJun-1999/dsh-memory) 为 Agent 提供跨会话长期记忆：对话自动沉淀为纯文本 md 认知图，Agent 侧多出 `cg` / `stg` 记忆工具，Web UI 使用方式不变。上游已在 DSH `0.2.1-rc.5` 上验证。
+
+```bash
+make plugins                  # = ./scripts/install-plugins.sh（栈需处于运行状态）
+docker compose up -d dsh      # 重建容器使 MDCG_TOKEN 生效（会生成新登录 token）
+```
+
+脚本按上游文档（`docs/ops/安装与前置.md` 手工三步）执行：克隆固定 tag（默认 `v0.9.23`，可用 `DSH_MEMORY_VERSION=<tag> make plugins` 覆盖）→ 容器内构建 → `dsh plugin --profile web add` → 写入 profile 的 `cordis.patch.yml` override → 从引导凭据派生写入令牌到 `.env` 的 `MDCG_TOKEN`。重复执行幂等，也可用于升级插件版本。
+
+要点：
+
+- **记忆存放**：`data/home/.dsh/.dsh-memory/data/mdcg`（挂载卷内，重建容器、升级插件均不丢失）
+- **写入默认关闭**（fail-closed）：不设 `MDCG_TOKEN` 时大脑以只读 guest 运行（能读/召回，不落盘）；令牌由脚本按上游推荐方案派生，ops / layers 白名单已收窄
+- **验证**：`docker compose logs dsh | grep -i lingshu` 应见记忆根路径日志；对 Agent 说「请记住：……」，新开会话再询问即可检验跨会话记忆
+- **卸载**：`docker compose exec dsh dsh plugin --profile web remove @furongjun1999/dsh-memory`，删除 `data/home/.dsh/profiles/web/cordis.patch.yml` 中的 `furongjun1999-dsh-memory` 条目与 `.env` 中的 `MDCG_TOKEN`，再 `docker compose up -d dsh`
 
 ## 运维
 
@@ -142,7 +161,7 @@ HTTPS 模式下，80 端口会 301 跳转到 HTTPS，并开启 HSTS，Nginx 也�
 | 重启 dsh（会生成新 token） | `make restart` |
 | 检查并热加载 Nginx 配置 | `make reload` |
 | 进入 dsh 容器 | `make shell` |
-| 安装 dsh 插件 | `docker compose exec dsh dsh plugin --profile web add <npm 包>` |
+| 安装其他 dsh 插件 | `docker compose exec dsh dsh plugin --profile web add <npm 包>` |
 | 停止（保留数据） | `make down` |
 
 **升级 dsh**：先查看可用版本（`npm view @deepseek-ai/dsh dist-tags`），修改 `.env` 中的 `DSH_VERSION`，再执行 `make upgrade`。上游处于快速迭代期，可能有不兼容变更，升级前请先备份 `data/`。

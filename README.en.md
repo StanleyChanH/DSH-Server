@@ -126,11 +126,30 @@ To add a username and password in front of dsh's own authentication, see [nginx/
 │   └── certs/                  # TLS certificates (not committed)
 ├── scripts/
 │   ├── init.sh                 # create .env and mounted directories
+│   ├── install-plugins.sh      # install the lingshu dsh-memory plugin (make plugins)
 │   └── show-url.sh             # print the current login link
 ├── data/home/      ─┐          # → /home/dsh; DSH_HOME=data/home/.dsh (API keys, sessions, plugins, credentials)
 ├── workspace/       ├ runtime  # → /workspace; agent workspace
 └── logs/nginx/     ─┘          # Nginx logs
 ```
+
+## Plugin: lingshu long-term memory (optional)
+
+[lingshu dsh-memory](https://github.com/FuRongJun-1999/dsh-memory) gives the agent cross-session long-term memory: conversations settle into a plain-text cognitive graph, and the agent gains the `cg` / `stg` memory tools. The upstream project verified it against dsh `0.2.1-rc.5`.
+
+```bash
+make plugins                  # = ./scripts/install-plugins.sh (stack must be running)
+docker compose up -d dsh      # recreate the container with MDCG_TOKEN (issues a new login token)
+```
+
+The script follows the upstream manual install: clone a pinned tag (default `v0.9.23`; override with `DSH_MEMORY_VERSION=<tag> make plugins`), build inside the container, `dsh plugin --profile web add`, write the profile `cordis.patch.yml` override, and derive the write credential into `MDCG_TOKEN` in `.env`. Re-running is idempotent and also upgrades the plugin.
+
+Notes:
+
+- **Memory store**: `data/home/.dsh/.dsh-memory/data/mdcg` — inside the bind mount, survives container rebuilds and plugin upgrades
+- **Writes are fail-closed**: without `MDCG_TOKEN` the brain runs read-only (guest); the script derives the token per the upstream recommended scheme, with narrowed ops/layers allowlists
+- **Verify**: `docker compose logs dsh | grep -i lingshu`; then tell the agent "remember: …" and ask again in a new session
+- **Uninstall**: `docker compose exec dsh dsh plugin --profile web remove @furongjun1999/dsh-memory`, drop the `furongjun1999-dsh-memory` entry from `data/home/.dsh/profiles/web/cordis.patch.yml` and `MDCG_TOKEN` from `.env`, then `docker compose up -d dsh`
 
 ## Operations
 
@@ -142,7 +161,7 @@ To add a username and password in front of dsh's own authentication, see [nginx/
 | Restart dsh (issues a new token) | `make restart` |
 | Validate and hot-reload Nginx | `make reload` |
 | Shell inside dsh | `make shell` |
-| Install a dsh plugin | `docker compose exec dsh dsh plugin --profile web add <npm-package>` |
+| Install another dsh plugin | `docker compose exec dsh dsh plugin --profile web add <npm-package>` |
 | Stop (data is kept) | `make down` |
 
 **Upgrading dsh**: check available versions (`npm view @deepseek-ai/dsh dist-tags`), change `DSH_VERSION` in `.env`, then run `make upgrade`. Upstream changes quickly and may break compatibility, so back up `data/` first.

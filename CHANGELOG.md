@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+### Added
+
+- 灵枢 dsh-memory 插件安装支持（`make plugins` / `scripts/install-plugins.sh`）：按上游文档固定 tag 克隆构建、`dsh plugin --profile web add`、写入 profile `cordis.patch.yml` override、派生收窄的 `MDCG_TOKEN` 写入 `.env`；幂等，可重复执行以升级插件版本
+- `docker-compose.yml` 为 dsh 服务透传 `MDCG_TOKEN`（留空则记忆大脑以只读 guest 运行，fail-closed）
+
 ### Fixed
 
 - CI smoke (https) 失败：TLS 下 curl 协商到 HTTP/2，WebSocket 升级头被丢弃（404）。冒烟测试的 WebSocket 检查改为强制 HTTP/1.1，与浏览器行为一致；Nginx 配置本身无问题

@@ -71,6 +71,9 @@ services:
       DSH_PUBLIC_URL: ${DSH_PUBLIC_URL:-}
       DSH_TRUSTED_HOSTS: ${DSH_TRUSTED_HOSTS:-}
       DSH_EXTRA_ARGS: ${DSH_EXTRA_ARGS:-}
+      # lingshu dsh-memory plugin write credential (see scripts/install-plugins.sh).
+      # Empty = the memory brain runs read-only (guest); set via .env to persist memories.
+      MDCG_TOKEN: ${MDCG_TOKEN:-}
     volumes:
       - ./data/home:/home/dsh
       - ./workspace:/workspace
