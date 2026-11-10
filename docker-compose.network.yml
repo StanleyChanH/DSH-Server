@@ -1,0 +1,10 @@
+services:
+  nginx:
+    networks:
+      default: {}
+      dsh-mcp: {}
+
+networks:
+  dsh-mcp:
+    external: true
+    name: dsh-mcp
